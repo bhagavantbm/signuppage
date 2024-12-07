@@ -5,38 +5,33 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const flash = require("connect-flash");
 const MongoStore = require("connect-mongo");
-const User = require("./models/user/login");
 const ejsmate = require("ejs-mate");
 const path = require("path");
 require("dotenv").config();
 
+const User = require("./models/user/login"); // Replace with the actual path to your User schema/model
+
 const app = express();
 
 // Database Connection
-async function main() {
-  try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("MongoDB connected successfully");
-  } catch (err) {
-    console.error("Database connection error:", err);
-  }
-}
-main();
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+  .then(() => console.log("MongoDB connected successfully"))
+  .catch((error) => console.error("MongoDB connection error:", error));
 
-// EJS Engine Configuration
-app.set("view engine", "ejs");
+// EJS configuration
 app.engine("ejs", ejsmate);
+app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-app.use(express.static(path.join(__dirname, "/public")));
+app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
 
-// Session Configuration with MongoStore
+// Session Configuration
 app.use(
   session({
-    secret: process.env.SECRET,
+    secret: process.env.SECRET || "defaultsecret",
     resave: false,
     saveUninitialized: true,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
@@ -48,6 +43,7 @@ app.use(
   })
 );
 
+// Flash Messages & Passport
 app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
@@ -65,18 +61,23 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
-const userRoutes = require("./routes/user");
-app.use("/", userRoutes);
+// Root Route
+app.get("/", (req, res) => {
+  res.render("index"); // Render index.ejs in the views folder
+});
 
-// Global Error Handler
+// Load Routes
+const userRoutes = require("./routes/user"); // Modularize routes
+app.use("/user", userRoutes);
+
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).render("error", { error: err });
 });
 
-// Listen on PORT
+// Start the server
 const PORT = process.env.PORT || 9090;
 app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
