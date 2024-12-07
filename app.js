@@ -24,6 +24,10 @@ app.set("views",path.join(__dirname,"views"))
 app.use(express.static(path.join(__dirname,"/public")));
 app.engine("ejs",ejsmate);
 
+require('dotenv').config();
+
+
+// Use the environment variable for MongoDB connection
 
 const sessionoperatores = {
     secret: 'mymsg' ,
