@@ -1,0 +1,34 @@
+.body{
+    background-color: yellow;
+}
+/* Home page */
+.home{
+    background-color: yellow;
+}
+
+/* signup page */
+.signup{
+    background-color: bisque;
+}
+.signupback{
+    background-color: chartreuse;
+    width: 100%;
+}
+
+/* login page */
+.login{
+    background-color: aquamarine;
+}
+
+/* login buttons */
+.btns{
+    display: flex;
+    margin-top: 20px;
+    justify-content: center;
+    align-items: center;
+}
+
+/* home page buttons */
+.btnbody{
+    background-color: aquamarine;
+}
