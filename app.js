@@ -1,88 +1,82 @@
-const mongoose=require("mongoose");
-const express=require("express");
-const app=express();
-const session=require("express-session");
-const passport=require("passport")
-const Localstratergy=require("passport-local")
-const flash=require("connect-flash");
-const User=require("./models/user/login")
-const userRoute=require("./routes/user")
-const ejs=require("ejs");
+const express = require("express");
+const mongoose = require("mongoose");
+const session = require("express-session");
+const passport = require("passport");
+const LocalStrategy = require("passport-local");
+const flash = require("connect-flash");
+const MongoStore = require("connect-mongo");
+const User = require("./models/user/login");
 const ejsmate = require("ejs-mate");
-const path=require("path");
-const { error } = require("console");
+const path = require("path");
+require("dotenv").config();
 
+const app = express();
 
-main().then(()=>{console.log("connection to DB successfull")})
-.catch(err => console.log(err));
-async function main() {
-  await mongoose.connect('mongodb://127.0.0.1:27017/user');
+// Database Connection
+async function connectToDB() {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log("MongoDB connected successfully.");
+  } catch (error) {
+    console.error("MongoDB connection failed:", error);
+  }
 }
-app.set("view engine","ejs")
+connectToDB();
+
+// EJS Engine Configuration
+app.set("view engine", "ejs");
+app.engine("ejs", ejsmate);
+app.set("views", path.join(__dirname, "views"));
+app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
-app.set("views",path.join(__dirname,"views"))
-app.use(express.static(path.join(__dirname,"/public")));
-app.engine("ejs",ejsmate);
 
-require('dotenv').config();
+// Session Configuration with MongoStore
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "fallbackSecret", // Use environment variable or fallback
+    resave: false,
+    saveUninitialized: true,
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
+    cookie: {
+      expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+    },
+  })
+);
 
-
-// Use the environment variable for MongoDB connection
-
-const sessionoperatores = {
-    secret: 'mymsg' ,
-    resave:false,
-    saveUninitialized:true,
-    cookie:{
-      expiers:Date.now()+7*24*60*60*1000,
-      maxAge: 7*24*60*60*1000, 
-      httpOnly:true
-    }
-}
-
-app.use(session(sessionoperatores))
 app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 
-
-passport.use(new Localstratergy(User.authenticate()));
-
-
+// Passport Configuration
+passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-
-// app.get("/demouser",async(req,res)=>{
-//     let fakeusr=new User({
-//         email:"virat@gmail.com",
-//         username:"bhagat99"
-//     })
-//    let registeruser= await User.register(fakeusr,"hello");
-//    console.log(registeruser)
-//    res.send(registeruser)
-// })
-
-
-  
-  app.get("/", (req, res) => {
-    res.redirect("index") 
+// Middleware for setting flash messages and user context
+app.use((req, res, next) => {
+  res.locals.success = req.flash("success");
+  res.locals.error = req.flash("error");
+  res.locals.currUser = req.user;
+  next();
 });
 
+// Routes
+const userRoutes = require("./routes/user");
+app.use("/", userRoutes);
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).render("error", { error: err });
+});
 
-
-
-
-app.use((req,res,next)=>{
-  res.locals.success=req.flash("success");
-  res.locals.error=req.flash("error")
-  res.locals.currUser=req.user;
-  next();
-})
-
-app.use("/",userRoute)
-
-app.listen("9090",(req,res)=>{
-    console.log("listening to port 9090");
-})
+// Dynamic Port for Render Hosting
+const PORT = process.env.PORT || 9090; 
+app.listen(PORT, () => {
+  console.log(`Listening on port ${PORT}...`);
+});
