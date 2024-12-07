@@ -13,30 +13,30 @@ require("dotenv").config();
 const app = express();
 
 // Database Connection
-async function connectToDB() {
+async function main() {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log("MongoDB connected successfully.");
-  } catch (error) {
-    console.error("MongoDB connection failed:", error);
+    console.log("MongoDB connected successfully");
+  } catch (err) {
+    console.error("Database connection error:", err);
   }
 }
-connectToDB();
+main();
 
 // EJS Engine Configuration
 app.set("view engine", "ejs");
 app.engine("ejs", ejsmate);
 app.set("views", path.join(__dirname, "views"));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "/public")));
 app.use(express.urlencoded({ extended: true }));
 
 // Session Configuration with MongoStore
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "fallbackSecret", // Use environment variable or fallback
+    secret: process.env.SECRET,
     resave: false,
     saveUninitialized: true,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
@@ -75,8 +75,8 @@ app.use((err, req, res, next) => {
   res.status(500).render("error", { error: err });
 });
 
-// Dynamic Port for Render Hosting
-const PORT = process.env.PORT || 9090; 
+// Listen on PORT
+const PORT = process.env.PORT || 9090;
 app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}...`);
+  console.log(`Listening on port ${PORT}`);
 });
