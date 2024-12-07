@@ -63,7 +63,7 @@ app.use((req, res, next) => {
 
 // Root Route
 app.get("/", (req, res) => {
-  res.render("index"); // Render index.ejs in the views folder
+  res.render("user/index"); // Note: Only specify relative path after 'views/'
 });
 
 // Load Routes
